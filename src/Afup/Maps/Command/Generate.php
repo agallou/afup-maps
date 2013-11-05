@@ -47,9 +47,6 @@ class Generate extends Command
         $geocoder = new \Geocoder\Geocoder();
         $geocoder->registerProvider($provider);
 
-//  $result = $geocoder->geocode("18000 France");
-//die(var_dump($result));
-
 
         $geoInfos = array();
 
