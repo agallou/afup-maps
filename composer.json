@@ -1,0 +1,10 @@
+{
+    "name": "afup/maps",
+    "autoload": {
+	    "psr-0": { "" : "src/" }
+    },
+    "require": {
+        "symfony/console": "2.3.x",
+        "twig/twig": "1.14.x"
+    }
+}
