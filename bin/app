@@ -4,9 +4,11 @@
 require_once __DIR__ . '/../vendor/autoload.php';
 
 
-use Afup\Maps\Command\Generate;
+use Afup\Maps\Command\GenerateFromBarometre;
+use Afup\Maps\Command\GenerateFromInscriptions;
 use Symfony\Component\Console\Application;
 
 $application = new Application();
-$application->add(new Generate);
+$application->add(new GenerateFromBarometre);
+$application->add(new GenerateFromInscriptions);
 $application->run();

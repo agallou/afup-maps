@@ -8,23 +8,11 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class Generate extends Command
+abstract class Generate extends Command
 {
-    protected function configure()
-    {
-        $this
-            ->setName('generate')
-            ->addArgument(
-                'file',
-                InputArgument::REQUIRED,
-                'Ficher CSV exporté du baromètre'
-            )
-        ;
-    }
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-
         $rootDir = __DIR__ . '/../../../../';
 
         $loader = new \Twig_Loader_Filesystem($rootDir . 'views/');
@@ -52,7 +40,7 @@ class Generate extends Command
 
         $file = new \SplFileObject($input->getArgument('file'));
         $file->setFlags(\SplFileObject:: READ_CSV + \SplFileObject::DROP_NEW_LINE + \SplFileObject::SKIP_EMPTY);
-        $file->setCsvControl(',', "\"");
+        $this->initCsv($file);
         $first = true;
         $cpt = 0;
         $ignored = 0;
@@ -60,27 +48,28 @@ class Generate extends Command
           $cpt++;
           if ($first) {
             $first = false;
-            continue;
+            if ($this->skipFirstLine()) {
+               continue;
+            }
           }
-          $code = $line[0];
-          if (null == $code || "0" == $code) {
-            $ignored++;
-            $output->writeln(sprintf('Line %s ignorée ("%s")', $cpt, $line[0]));
-            continue;
+          if (!is_array($line)) {
+              continue;
           }
-          if (strlen($code) == 2) {
-             $code .= '000';
-             $result = $geocoder->geocode($code . ' France');
-             if ($result['zipcode'] != $code) {
-                throw new \Exception("Région incohérente");
-             }
-          } else {
-            $result = $geocoder->geocode($code);
+          $result = $this->geoCodeLine($geocoder, $output, $line);
+          if (null === $result) {
+              $ignored++;
+              $output->writeln(sprintf('Line %s ignorée ("%s")', $cpt, var_export($line, true)));
+              continue;
           }
+
+            if ($cpt == 120) {
+                //die(var_dump($line));
+            }
+
           $geoInfos[] = array($result['latitude'], $result['longitude'], $cpt);
         }
 
-        $filename = $rootDir . 'output/index.html';
+        $filename = $rootDir . 'output/' . $this->getOutputFilename();
         file_put_contents($filename, $twig->render('base.twig', array(
           'geo' => $geoInfos,
         )));
@@ -88,4 +77,36 @@ class Generate extends Command
 
         $output->writeln(sprintf('File <info>%s</info> written', realpath($filename)));
     }
+
+    /**
+     * @param \Geocoder\Geocoder $geocoder
+     * @param OutputInterface $output
+     * @param array $line
+     *
+     * @return \Geocoder\Result\ResultInterface|\Geocoder\ResultInterface|null
+     *
+     * @throws \Exception
+     */
+    abstract protected function geoCodeLine(\Geocoder\Geocoder $geocoder, OutputInterface $output, array $line);
+
+    /**
+     * @return string
+     */
+    abstract protected function getOutputFilename();
+
+    /**
+     * @param \SplFileObject $file
+     *
+     * @return mixed
+     */
+    abstract protected function initCsv(\SplFileObject $file);
+
+    /**
+     * @return bool
+     */
+    protected function skipFirstLine()
+    {
+        return false;
+    }
+
 }
