@@ -62,10 +62,6 @@ abstract class Generate extends Command
               continue;
           }
 
-            if ($cpt == 120) {
-                //die(var_dump($line));
-            }
-
           $geoInfos[] = array($result['latitude'], $result['longitude'], $cpt);
         }
 
